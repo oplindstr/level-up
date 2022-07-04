@@ -27,4 +27,21 @@ describe('getTouchedAnnotation', () => {
       annotations[1]
     );
   });
+
+  test('get annotation with touch between two annotations where ones center is closer, but the area itself is further away', () => {
+    const annotations = [
+      { left: 0, top: 0, width: 10, height: 50, url: 'https://showell.com/1' },
+      {
+        left: 0,
+        top: 53,
+        width: 20,
+        height: 50,
+        url: 'https://showell.com/1',
+      },
+    ];
+
+    expect(getTouchedAnnotation({ x: 0, y: 52 }, annotations)).toBe(
+      annotations[1]
+    );
+  });
 });
