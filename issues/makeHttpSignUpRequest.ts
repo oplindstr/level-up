@@ -5,18 +5,25 @@ export function makeHttpSignUpRequest(
   contentType: 'form' | 'json'
 ): string {
   let body = '';
+  let requestContentType = '';
 
   if (contentType === 'form') {
-    body = `name=${accountName}&userEmail=${email}`;
+    const encodedAccountName = encodeURIComponent(accountName)
+    const encodedEmail = encodeURIComponent(email)
+
+    body = `name=${encodedAccountName}&userEmail=${encodedEmail}`;
+    requestContentType = 'application/x-www-form-urlencoded'
   } else {
     body = JSON.stringify({ name: accountName, userEmail: email });
+    requestContentType = 'application/json'
   }
 
   return `POST /1/sign-up HTTP/1.1
     Host: api.myapp
-    Authentication: Basic ${bearerToken}
-    Content-Type: application/x-www-form-urlencoded
+    Authorization: Bearer ${bearerToken}
+    Content-Type: ${requestContentType}
     Content-Length: ${body.length}
     
     ${body}`;
 }
+
