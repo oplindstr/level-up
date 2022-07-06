@@ -7,7 +7,7 @@ import { yearsToExpire } from '../orders/Order';
 const MOCK_ORDER = {
   id: 'abc',
   date: new Date(),
-  recipients: 'john@google.com;jane@google.com',
+  recipients: 'john@google.com;jane@google.com;op@google.com',
   cancelled: false,
   contents: 'Item1\nItem2',
   processed: false,
@@ -131,7 +131,59 @@ describe('order-module', () => {
         ...MOCK_ORDER,
         processed: true,
       });
+
     });
+
+    // 
+    test('send emails to all recipients specified in an order', async () => {
+      queue.addOrder({ ...MOCK_ORDER });
+      await queue.processNextBatch();
+
+      expect(mockMailer.sendEmail).toHaveBeenCalledWith(
+        'john@google.com',
+        MOCK_ORDER.contents
+      );
+
+      expect(mockMailer.sendEmail).toHaveBeenCalledWith(
+        'jane@google.com',
+        MOCK_ORDER.contents
+      );
+
+      expect(mockMailer.sendEmail).toHaveBeenCalledWith(
+        'op@google.com',
+        MOCK_ORDER.contents
+      );
+    })
+
+    test('process order with an invalid email', async () => {
+      queue.addOrder({
+         ...MOCK_ORDER, 
+         recipients: 'john@google.com;opgoogle.com;jane@google.com'
+      });
+
+      await queue.processNextBatch();
+      
+      expect(queue.getProcessedOrders()[0]).toEqual({
+        ...MOCK_ORDER,
+        recipients: 'john@google.com;opgoogle.com;jane@google.com',
+        processed: true,
+      });
+
+      expect(mockMailer.sendEmail).toHaveBeenCalledWith(
+        'john@google.com',
+        MOCK_ORDER.contents
+      );
+
+      expect(mockMailer.sendEmail).not.toHaveBeenCalledWith(
+        'opgoogle.com',
+        MOCK_ORDER.contents
+      );
+
+      expect(mockMailer.sendEmail).toHaveBeenCalledWith(
+        'jane@google.com',
+        MOCK_ORDER.contents
+      );
+    })
 
     test('add multiple orders (batch size + 1) and process twice', async () => {
       for (let i = 0; i < 6; i++) {
