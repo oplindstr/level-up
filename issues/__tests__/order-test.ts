@@ -1,4 +1,8 @@
-import { OrderProcessor, OrderQueue, Mailer, Database } from '../order';
+import OrderProcessor from '../orders/OrderProcessor';
+import OrderQueue from '../orders/OrderQueue';
+import Mailer from '../orders/Mailer';
+import Database from '../orders/Database';
+import { yearsToExpire } from '../orders/Order';
 
 const MOCK_ORDER = {
   id: 'abc',
@@ -8,6 +12,9 @@ const MOCK_ORDER = {
   contents: 'Item1\nItem2',
   processed: false,
 };
+
+const expirationDate = new Date();
+  expirationDate.setFullYear(expirationDate.getFullYear() - yearsToExpire);
 
 describe('order-module', () => {
   let processor: OrderProcessor;
@@ -45,6 +52,15 @@ describe('order-module', () => {
       expect(order).toHaveProperty('processed', false);
     });
 
+    test('process expired order', async () => {
+      const order = await processor.orderProcessor({
+        ...MOCK_ORDER,
+        date: expirationDate
+      });
+
+      expect(order).toHaveProperty('processed', false);
+    });
+
     test('send confirmation email', async () => {
       await processor.sendConfirmationMail(
         {
@@ -70,6 +86,39 @@ describe('order-module', () => {
           'johngoogle.com'
         )
       ).rejects.toThrowError('Invalid email');
+    });
+
+    test('send confirmation email with cancelled order', async () => {
+      return expect(
+        processor.sendConfirmationMail(
+          {
+            ...MOCK_ORDER,
+            cancelled: true
+          },
+          'johngoogle.com'
+        )
+      ).rejects.toThrowError('Order has been cancelled');
+    });
+
+    test('send confirmation email with expired order', async () => {
+      return expect(
+        processor.sendConfirmationMail(
+          {
+            ...MOCK_ORDER,
+            date: expirationDate
+          },
+          'johngoogle.com'
+        )
+      ).rejects.toThrowError('Order has expired');
+    });
+
+    test('send confirmation email with unprocessed order', async () => {
+      return expect(
+        processor.sendConfirmationMail(
+          MOCK_ORDER,
+          'johngoogle.com'
+        )
+      ).rejects.toThrowError("Order hasn't been processed yet");
     });
   });
 
