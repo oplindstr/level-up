@@ -1,4 +1,9 @@
-interface VerySimpleDatabase {
+/* 
+  Found no problems here. Tested with an express server (app.ts -file) and everything worked
+  One change you could make though is not passing the whole http post parameter object to these functions
+*/
+
+export interface VerySimpleDatabase {
   insert(key: string, value: string | number): void;
 }
 
